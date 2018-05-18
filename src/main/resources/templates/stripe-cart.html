@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<!-- add this  xmlns:th="http://www.w3.org/1999/xhtml" for thymeLeaf to work-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8" />
+<title>Stripe App</title>
+
+<!-- Jquery minified -->
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"
+	integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	crossorigin="anonymous"></script>
+
+<!-- Bootstrap minified CSS -->
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+	integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+	crossorigin="anonymous" />
+
+<!-- Bootstrap minified JavaScript -->
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+	crossorigin="anonymous"></script>
+
+<!-- Stripe JavaScript Library-->
+<script src="https://js.stripe.com/v2"></script>
+<script src="https://js.stripe.com/v3"></script>
+<link rel="stylesheet" href="/stripe/stripe.css" />
+</head>
+
+
+<body>
+	<div class="container" style="margin-bottom: 30px;">
+		<div class="text-center">
+			<h2 style="margin-top: 30px; margin-bottom: 30px;">Stripe App
+				Demo</h2>
+		</div>
+
+		<div class="row">
+			<div class="col-sm-12 col-md-10 col-md-offset-1">
+				<table class="table table-bordered table-hover table-condensed"
+					style="margin-bottom: 30px;">
+					<thead>
+						<tr>
+							<th>Product Name</th>
+							<th>Image</th>
+							<th>Product Description</th>
+							<th>Price</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:each="product : ${productList}">
+
+							<td th:text="${product.name}"></td>
+							<td><img class="img-responsive" style="width: 200px;"
+								th:src="'/'+${product.name}+'.png'" /></td>
+
+
+							<td th:text="${product.description}"></td>
+							<td th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></td>
+							<td><a
+								th:href="@{/stripe/addToCart(id=${product.productId})}"
+								class="btn btn-small btn-primary">Add To Cart</a></td>
+						</tr>
+
+					</tbody>
+
+				</table>
+
+
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>Product</th>
+							<th><span style="margin-left: 40px">Quantity</span></th>
+							<th class="text-center">Price</th>
+							<th class="text-center">Subtotal</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:each="item : ${cartItemList}">
+							<td class="col-sm-7">
+
+								<div class="media">
+									<div class="media-body">
+										<h4 class="media-heading">
+											<a href="#" th:text="${item.product.name}">Product Name</a>
+										</h4>
+										<span>State: </span><span class="text-success"><strong>In
+												Stock</strong></span>
+									</div>
+								</div>
+							</td>
+
+							<td class="col-sm-2" style="text-align: center">
+								<form th:action="@{/stripe/updateCart}" method="post">
+									<input type="hidden" name="id" th:value="${item.id}" />
+
+									<button class="btn btn-info btn-sm pull-left" type="submit"
+										th:id="'update-'+${item.id}"
+										style="height: 30px; display: none">Update</button>
+
+									<input class="item-qty" th:id="'qty-'+${item.id}" name="qty"
+										th:value="${item.qty}"
+										style="display: inline-block; width: 50px;" />
+								</form>
+							</td>
+
+							<td class="col-sm-1 text-center"><strong
+								th:text="${item.product.price}" th:id="'price-'+${item.id}">Price</strong>
+
+							</td>
+
+
+							<td class="col-sm-1 text-center"><strong class="subtotal"
+								th:text="${item.subtotal}" th:id="'subtotal'+${item.id}">SubTotal</strong>
+
+							</td>
+							<!-- /stripe/remove?id=123 -->
+							<td class="col-sm-1"><a class="btn btn-warning btn-sm"
+								type="button" th:href="@{/stripe/remove(id=${item.id})}"> <span
+									class="glyphicon glyphicon-remove">Remove</span>
+							</a></td>
+						</tr>
+						<tr>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td><h5>Total</h5></td>
+							<td class="text-right"><h5>
+									<strong id="total" th:text="${total}">Total</strong>
+								</h5></td>
+						</tr>
+					</tbody>
+
+				</table>
+
+				<!-- Stripe checkout Payment -->
+				<h3>Checkout payment</h3>
+				<span th:if="${checkoutPaySuccess}"><h3 class="bg-info">Payment
+						Successful!</h3></span>
+
+				<form action="/stripe/checkoutPay" method="POST">
+					<script src="https://checkout.stripe.com/checkout.js"
+						class="stripe-button" data-key="pk_test_otQnjjPy6y3fnMDITtKlPXJn"
+						data-amount="999" data-name="Luxmartwebdesign Charge"
+						data-description="Widget"
+						data-image="https://stripe.com/img/documentation/checkout/marketplace.png"
+						data-locale="auto" data-currency="cad">
+  </script>
+				</form>
+
+				<br />
+				<br />
+
+				<!-- Elements payment -->
+				<h3>Elements Payment</h3>
+				<span th:if="${elementsPaySuccess}"><h3 class="bg-info">Payment
+						Successful!</h3></span>
+
+				<script src="https://js.stripe.com/v3/"></script>
+
+				<form action="/stripe/elementsPay" method="post" id="payment-form">
+					<div class="form-row">
+						<label for="card-element"> Credit or debit card </label>
+						<div id="card-element">
+							<!-- a Stripe Element will be inserted here. -->
+						</div>
+
+						<!-- Used to display form errors -->
+						<div id="card-errors" role="alert"></div>
+					</div>
+
+					<button>Submit Payment</button>
+				</form>
+
+			</div>
+		</div>
+	</div>
+
+	<script src="/main.js"></script>
+	<script src="/stripe/stripe.js"></script>
+</body>
+</html>
